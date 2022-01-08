@@ -57,7 +57,7 @@ $status = ['status' => 'fail' , 'description'=> ''];
 ## Config file hyperpay.php 
 
 ```php
-// you can change mode  
+// you can change mode [ live , test ]  
  "mode" => env( 'HYPER_PAY_MODE', "test" ),
 ```
 
