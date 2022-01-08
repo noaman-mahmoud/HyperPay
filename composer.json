@@ -1,0 +1,30 @@
+{
+    "name": "noaman-mahmoud/hyperpay",
+    "description": "integration with hyperpay payment",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Noaman Mahmoud",
+            "email": "n3man.amhmoud@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "NoamanMahmoud\\HyperPay\\" : "src/"
+        }
+    },
+
+    "extra": {
+        "laravel": {
+            "providers": [
+                "NoamanMahmoud\\HyperPay\\HyperPayServiceProvider"
+            ],
+            "aliases": {
+                "Bitly": "NoamanMahmoud\\HyperPay\\hyperpay"
+            }
+        }
+    }
+}
