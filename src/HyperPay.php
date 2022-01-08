@@ -4,17 +4,8 @@ namespace NoamanMahmoud\HyperPay;
 
 class HyperPay {
 
-    protected $token;
-    protected $transaction;
-
-    public function __construct(){
-
-        $this->token = config('hyperpay.token');
-        $this->transaction = rand(1111,9999).'_'.rand();
-    }
-
-    /**  public function get Entity Id . */
-    public function getEntityId($brand)
+    /**  public function get EntityId . */
+    public static function getEntityId($brand)
     {
         $entities = config('hyperpay.entities');
 
@@ -27,7 +18,7 @@ class HyperPay {
     }
 
     /**  public function get Url . */
-    public function getUrl()
+    public static function getUrl()
     {
         if (!in_array(config('hyperpay.mode') , ['test','live']) )
         {
@@ -47,29 +38,38 @@ class HyperPay {
     }
 
     /**  public function get Information . */
-    public function getInformation($dataInfo = [])
+    public static function getInformation($dataInfo = [])
     {
         $info = empty($dataInfo) ? config('hyperpay.information') : $dataInfo;
 
-        return "&currency=SAR".
-        "&merchantTransactionId=".$this->transaction.
-        "&customer.email=".$info['customer.email'].
-        "&billing.street1=".$info['billing.street1'].
-        "&billing.city=".$info['billing.city'].
-        "&billing.state=".$info['billing.state'].
-        "&billing.country=".$info['billing.country'].
-        "&billing.postcode=".$info['billing.postcode'].
-        "&customer.givenName=".$info['billing.postcode'].
-        "&customer.surname=".$info['billing.postcode'].
-        config('hyperpay.mode') == 'test' ? "&testMode=EXTERNAL" : "".
+        $parameters =
+            "&currency=".config('hyperpay.currency').
+            "&merchantTransactionId=".rand(1111,9999).'_'.rand().
+            "&customer.email=".$info['customer.email'].
+            "&billing.street1=".$info['billing.street1'].
+            "&billing.city=".$info['billing.city'].
+            "&billing.state=".$info['billing.state'].
+            "&billing.country=".$info['billing.country'].
+            "&billing.postcode=".$info['billing.postcode'].
+            "&customer.givenName=".$info['customer.givenName'].
+            "&customer.surname=".$info['customer.surname'].
+            "&testMode=EXTERNAL".
             "&createRegistration=true".
             "&paymentType=DB";
+
+        if (config('hyperpay.mode') == 'live'){
+
+            $data = str_ireplace("&testMode=EXTERNAL","",$parameters);
+        }else{
+            $data = $parameters;
+        }
+
+        return $data;
     }
 
     /**  public function checkout Hyper Pay . */
-    public function checkoutHyperPay($price = "" , $brand = "" , $dataInfo = [])
+    public static function checkoutHyperPay($price = "" , $brand = "" , $dataInfo = [])
     {
-
         if (empty($price))
         {
             throw new \Exception('pleas set amount to checkout HyperPay ');
@@ -80,15 +80,15 @@ class HyperPay {
             throw new \Exception('pleas set brand to checkout HyperPay ');
         }
 
-        $data = "entityId=".$this->getEntityId($brand)."&amount=".$price.$this->getInformation($dataInfo);
+        $data = "entityId=".self::getEntityId($brand)."&amount=".$price.self::getInformation($dataInfo);
 
         global $response;
 
         $ch  = curl_init();
         $SSL = config('hyperpay.mode') == "test" ? false : true;
 
-        curl_setopt($ch, CURLOPT_URL, $this->getUrl());
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization:Bearer '.$this->token]);
+        curl_setopt($ch, CURLOPT_URL, self::getUrl());
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization:Bearer '.config('hyperpay.token')]);
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER,$SSL);
@@ -104,15 +104,15 @@ class HyperPay {
     }
 
     /**  public function transaction Id . */
-    public function transactionId()
+    public static function transactionId()
     {
-        global $response; $data = $response;
+        global $response; $data = json_decode($response);
 
         return $data->id;
     }
 
     /**  public function payment Status . */
-    public function paymentStatus($transactionId, $brand)
+    public static function paymentStatus($transactionId, $brand)
     {
         if (empty($transactionId))
         {
@@ -122,12 +122,12 @@ class HyperPay {
         $mode = config('hyperpay.mode') == 'test' ? "test." : '';
 
         $url  = "https://{$mode}oppwa.com/v1/checkouts/{$transactionId}/payment";
-        $url .= "?entityId=".$this->getEntityId($brand);
+        $url .= "?entityId=".self::getEntityId($brand);
 
         $ch  = curl_init();
         $SSL = config('hyperpay.mode') == "test" ? false : true;
         curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization:Bearer '.$this->token]);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization:Bearer '.config('hyperpay.token')]);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $SSL);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -147,7 +147,7 @@ class HyperPay {
 
         $description  = $json['result']['description'];
 
-        if ( $this->success($code) ){
+        if ( self::success($code) ){
 
             $data = ['status' => 'success' , 'description'=> $description ];
 
@@ -160,7 +160,7 @@ class HyperPay {
     }
 
     /**  public function success . */
-    public function success($code)
+    public static function success($code)
     {
         $codePattern   = '/^(000\.000\.|000\.100\.1|000\.[36])/';
         $manualPattern = '/^(000\.400\.0|000\.400\.100)/';
